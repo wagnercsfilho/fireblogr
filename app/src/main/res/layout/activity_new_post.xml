@@ -12,13 +12,14 @@
 
     <ImageButton
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
+        android:layout_height="160dp"
         app:srcCompat="@mipmap/add_btn"
         android:layout_alignParentTop="true"
         android:id="@+id/image_media"
         android:scaleType="centerCrop"
         android:cropToPadding="false"
-        android:adjustViewBounds="true" />
+        android:adjustViewBounds="true"
+        android:background="@android:color/white" />
 
     <EditText
         android:layout_width="wrap_content"
@@ -48,14 +49,4 @@
         android:layout_alignParentEnd="true"
         android:hint="Description" />
 
-    <Button
-        android:text="Create"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:id="@+id/button_create"
-        android:layout_alignParentBottom="true"
-        android:layout_alignParentLeft="true"
-        android:layout_alignParentStart="true"
-        android:layout_alignParentRight="true"
-        android:layout_alignParentEnd="true" />
 </RelativeLayout>

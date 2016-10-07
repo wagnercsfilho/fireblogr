@@ -3,15 +3,15 @@ package com.wagnercsfilho.fireblogr.activity;
 import android.app.ProgressDialog;
 import android.content.Intent;
 import android.net.Uri;
+import android.os.Bundle;
 import android.support.design.widget.Snackbar;
 import android.support.v7.app.AppCompatActivity;
-import android.os.Bundle;
 import android.text.TextUtils;
+import android.view.Menu;
+import android.view.MenuItem;
 import android.view.View;
-import android.widget.Button;
 import android.widget.EditText;
 import android.widget.ImageButton;
-import android.widget.ProgressBar;
 
 import com.google.android.gms.tasks.OnSuccessListener;
 import com.google.firebase.database.DatabaseReference;
@@ -21,7 +21,6 @@ import com.google.firebase.storage.StorageReference;
 import com.google.firebase.storage.UploadTask;
 import com.wagnercsfilho.fireblogr.R;
 
-import java.net.URI;
 import java.util.Random;
 
 import static android.content.Intent.ACTION_GET_CONTENT;
@@ -35,8 +34,6 @@ public class NewPostActivity extends AppCompatActivity {
     EditText editTitle;
 
     EditText editDescription;
-
-    Button buttonCreate;
 
     Uri imageUri;
 
@@ -68,39 +65,6 @@ public class NewPostActivity extends AppCompatActivity {
             }
         });
 
-        buttonCreate = (Button) findViewById(R.id.button_create);
-        buttonCreate.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                final String title = editTitle.getText().toString().trim();
-                final String description = editDescription.getText().toString().trim();
-
-                if (!TextUtils.isEmpty(title) && !TextUtils.isEmpty(description) && imageMedia != null) {
-
-                    progressDialog.setMessage("Posting....");
-                    progressDialog.show();
-
-                    StorageReference filePath = storageReference.child("blog_images").child(imageUri.getLastPathSegment());
-                    filePath.putFile(imageUri).addOnSuccessListener(new OnSuccessListener<UploadTask.TaskSnapshot>() {
-                        @Override
-                        public void onSuccess(UploadTask.TaskSnapshot taskSnapshot) {
-                            Uri downloadUri = taskSnapshot.getDownloadUrl();
-
-                            DatabaseReference newPost = databaseReference.push();
-
-                            newPost.child("title").setValue(title);
-                            newPost.child("description").setValue(description);
-                            newPost.child("image").setValue(downloadUri.toString());
-
-
-                            progressDialog.dismiss();
-                        }
-                    });
-                } else {
-                    Snackbar.make(v, "Fill all fields", Snackbar.LENGTH_LONG).setAction("Action", null).show();
-                }
-            }
-        });
     }
 
     @Override
@@ -112,6 +76,55 @@ public class NewPostActivity extends AppCompatActivity {
             imageMedia.setImageURI(imageUri);
         }
     }
+
+    @Override
+    public boolean onCreateOptionsMenu(Menu menu) {
+        getMenuInflater().inflate(R.menu.new_post_menu, menu);
+        return super.onCreateOptionsMenu(menu);
+    }
+
+    @Override
+    public boolean onOptionsItemSelected(MenuItem item) {
+        if (item.getItemId() == R.id.action_share) {
+            createPost(item.getActionView());
+        }
+
+        return super.onOptionsItemSelected(item);
+    }
+
+
+    private void createPost(View v) {
+        final String title = editTitle.getText().toString().trim();
+        final String description = editDescription.getText().toString().trim();
+
+        if (!TextUtils.isEmpty(title) && !TextUtils.isEmpty(description) && imageMedia != null) {
+
+            progressDialog.setMessage("Posting....");
+            progressDialog.show();
+
+            StorageReference filePath = storageReference.child("blog_images").child(imageUri.getLastPathSegment());
+            filePath.putFile(imageUri).addOnSuccessListener(new OnSuccessListener<UploadTask.TaskSnapshot>() {
+                @Override
+                public void onSuccess(UploadTask.TaskSnapshot taskSnapshot) {
+                    Uri downloadUri = taskSnapshot.getDownloadUrl();
+
+                    DatabaseReference newPost = databaseReference.push();
+
+                    newPost.child("title").setValue(title);
+                    newPost.child("description").setValue(description);
+                    newPost.child("image").setValue(downloadUri.toString());
+
+                    progressDialog.dismiss();
+
+                    startActivity(new Intent(NewPostActivity.this, MainActivity.class));
+                }
+            });
+        } else {
+            Snackbar.make(v, "Fill all fields", Snackbar.LENGTH_LONG).setAction("Action", null).show();
+        }
+    }
+
+
 
     private static String random() {
         Random generator = new Random();

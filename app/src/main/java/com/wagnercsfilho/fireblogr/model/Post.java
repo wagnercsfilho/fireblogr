@@ -1,10 +1,10 @@
 package com.wagnercsfilho.fireblogr.model;
 
-public class Blog {
+public class Post {
 
     private String image, title, description;
 
-    public Blog() {
+    public Post() {
 
     }
 
