@@ -35,12 +35,12 @@ import com.wagnercsfilho.fireblogr.model.Post;
 public class MainActivity extends AppCompatActivity
         implements NavigationView.OnNavigationItemSelectedListener {
 
-    DatabaseReference databaseReference;
+    DatabaseReference mDatabaseRefPosts;
 
-    FirebaseAuth firebaseAuth;
-    FirebaseAuth.AuthStateListener authStateListener;
+    FirebaseAuth mAuth;
+    FirebaseAuth.AuthStateListener mAuthListener;
 
-    RecyclerView listPost;
+    RecyclerView mPostList;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -66,8 +66,8 @@ public class MainActivity extends AppCompatActivity
         NavigationView navigationView = (NavigationView) findViewById(R.id.nav_view);
         navigationView.setNavigationItemSelectedListener(this);
 
-        firebaseAuth = FirebaseAuth.getInstance();
-        authStateListener = new FirebaseAuth.AuthStateListener() {
+        mAuth = FirebaseAuth.getInstance();
+        mAuthListener = new FirebaseAuth.AuthStateListener() {
             @Override
             public void onAuthStateChanged(@NonNull FirebaseAuth firebaseAuth) {
                 if (firebaseAuth.getCurrentUser() == null) {
@@ -78,11 +78,11 @@ public class MainActivity extends AppCompatActivity
             }
         };
 
-        databaseReference = FirebaseDatabase.getInstance().getReference().child("posts");
+        mDatabaseRefPosts = FirebaseDatabase.getInstance().getReference().child("posts");
 
-        listPost = (RecyclerView) findViewById(R.id.list_post);
-        listPost.setHasFixedSize(true);
-        listPost.setLayoutManager(new LinearLayoutManager(this));
+        mPostList = (RecyclerView) findViewById(R.id.list_post);
+        mPostList.setHasFixedSize(true);
+        mPostList.setLayoutManager(new LinearLayoutManager(this));
 
 
     }
@@ -120,7 +120,7 @@ public class MainActivity extends AppCompatActivity
     }
 
     private void logout() {
-        firebaseAuth.signOut();
+        mAuth.signOut();
     }
 
     @SuppressWarnings("StatementWithEmptyBody")
@@ -151,14 +151,13 @@ public class MainActivity extends AppCompatActivity
     @Override
     protected void onStart() {
         super.onStart();
-
-        firebaseAuth.addAuthStateListener(authStateListener);
+        mAuth.addAuthStateListener(mAuthListener);
 
         FirebaseRecyclerAdapter<Post, PostViewHolder> firebaseRecyclerAdapter = new FirebaseRecyclerAdapter<Post, PostViewHolder>(
                 Post.class,
                 R.layout.list_post,
                 PostViewHolder.class,
-                databaseReference
+                mDatabaseRefPosts
         ) {
             @Override
             protected void populateViewHolder(PostViewHolder viewHolder, Post model, int position) {
@@ -170,14 +169,15 @@ public class MainActivity extends AppCompatActivity
             }
         };
 
-        listPost.setAdapter(firebaseRecyclerAdapter);
+        mPostList.setAdapter(firebaseRecyclerAdapter);
     }
 
     @Override
     protected void onStop() {
         super.onStop();
-
-        firebaseAuth.removeAuthStateListener(authStateListener);
+        if (mAuthListener != null) {
+            mAuth.removeAuthStateListener(mAuthListener);
+        }
     }
 
     public static class PostViewHolder extends RecyclerView.ViewHolder {
