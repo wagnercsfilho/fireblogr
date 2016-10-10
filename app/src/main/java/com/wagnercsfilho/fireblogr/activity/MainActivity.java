@@ -4,7 +4,6 @@ import android.content.Context;
 import android.content.Intent;
 import android.graphics.Color;
 import android.os.Bundle;
-import android.support.annotation.NonNull;
 import android.support.design.widget.FloatingActionButton;
 import android.support.design.widget.NavigationView;
 import android.support.v4.view.GravityCompat;
@@ -14,23 +13,26 @@ import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
 import android.support.v7.widget.Toolbar;
+import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
 import android.widget.ImageView;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import com.firebase.ui.database.FirebaseRecyclerAdapter;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
 import com.makeramen.roundedimageview.RoundedTransformationBuilder;
-import com.squareup.picasso.Callback;
-import com.squareup.picasso.NetworkPolicy;
 import com.squareup.picasso.Picasso;
 import com.squareup.picasso.Transformation;
 import com.wagnercsfilho.fireblogr.R;
 import com.wagnercsfilho.fireblogr.model.Post;
+
+import butterknife.BindView;
+import butterknife.ButterKnife;
 
 public class MainActivity extends AppCompatActivity
         implements NavigationView.OnNavigationItemSelectedListener {
@@ -40,12 +42,23 @@ public class MainActivity extends AppCompatActivity
     FirebaseAuth mAuth;
     FirebaseAuth.AuthStateListener mAuthListener;
 
+    @BindView(R.id.list_post)
     RecyclerView mPostList;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
+
+        mAuth = FirebaseAuth.getInstance();
+
+        if (mAuth.getCurrentUser() == null) {
+            Intent intent = new Intent(MainActivity.this, SignInActivity.class);
+            intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP);
+            startActivity(intent);
+            finish();
+        }
+
         Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
 
@@ -66,25 +79,12 @@ public class MainActivity extends AppCompatActivity
         NavigationView navigationView = (NavigationView) findViewById(R.id.nav_view);
         navigationView.setNavigationItemSelectedListener(this);
 
-        mAuth = FirebaseAuth.getInstance();
-        mAuthListener = new FirebaseAuth.AuthStateListener() {
-            @Override
-            public void onAuthStateChanged(@NonNull FirebaseAuth firebaseAuth) {
-                if (firebaseAuth.getCurrentUser() == null) {
-                    Intent intent = new Intent(MainActivity.this, SignInActivity.class);
-                    intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP);
-                    startActivity(intent);
-                }
-            }
-        };
+        ButterKnife.bind(this);
+
 
         mDatabaseRefPosts = FirebaseDatabase.getInstance().getReference().child("posts");
-
-        mPostList = (RecyclerView) findViewById(R.id.list_post);
         mPostList.setHasFixedSize(true);
         mPostList.setLayoutManager(new LinearLayoutManager(this));
-
-
     }
 
     @Override
@@ -99,7 +99,6 @@ public class MainActivity extends AppCompatActivity
 
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
-        // Inflate the menu; this adds items to the action bar if it is present.
         getMenuInflater().inflate(R.menu.main, menu);
         return true;
     }
@@ -126,7 +125,7 @@ public class MainActivity extends AppCompatActivity
     @SuppressWarnings("StatementWithEmptyBody")
     @Override
     public boolean onNavigationItemSelected(MenuItem item) {
-        // Handle navigation view item clicks here.
+        // Handle navigation mView item clicks here.
         int id = item.getItemId();
 
         if (id == R.id.nav_camera) {
@@ -151,8 +150,12 @@ public class MainActivity extends AppCompatActivity
     @Override
     protected void onStart() {
         super.onStart();
-        mAuth.addAuthStateListener(mAuthListener);
+        if (mAuth.getCurrentUser() != null) {
+            fetchBlogPosts();
+        }
+    }
 
+    private void fetchBlogPosts() {
         FirebaseRecyclerAdapter<Post, PostViewHolder> firebaseRecyclerAdapter = new FirebaseRecyclerAdapter<Post, PostViewHolder>(
                 Post.class,
                 R.layout.list_post,
@@ -161,64 +164,69 @@ public class MainActivity extends AppCompatActivity
         ) {
             @Override
             protected void populateViewHolder(PostViewHolder viewHolder, Post model, int position) {
+
+                final String postId = getRef(position).toString();
+
                 viewHolder.setTitle(model.getTitle());
                 viewHolder.setDescription(model.getDescription());
                 viewHolder.setImage(getApplicationContext(), model.getImage());
-
                 viewHolder.setUser(getApplicationContext(), model.getUser());
+
+                viewHolder.mView.setOnClickListener(new View.OnClickListener() {
+                    @Override
+                    public void onClick(View view) {
+                        Toast.makeText(MainActivity.this, "You clicked a View: " + postId, Toast.LENGTH_LONG).show();
+                    }
+                });
             }
         };
 
         mPostList.setAdapter(firebaseRecyclerAdapter);
     }
 
-    @Override
-    protected void onStop() {
-        super.onStop();
-        if (mAuthListener != null) {
-            mAuth.removeAuthStateListener(mAuthListener);
-        }
-    }
-
     public static class PostViewHolder extends RecyclerView.ViewHolder {
 
-        View view;
+        View mView;
+
+        TextView mPostTitleText;
+        TextView mPostDescText;
+        ImageView mPostMediaImage;
+        TextView mUserFullNameText;
+        ImageView mUserAvatarImage;
 
         public PostViewHolder(View itemView) {
             super(itemView);
 
-            view = itemView;
-        }
+            mView = itemView;
 
-        public void setTitle(String title) {
-            TextView textPostTitle = (TextView) view.findViewById(R.id.text_post_title);
-            textPostTitle.setText(title);
-        }
+            mPostTitleText = (TextView) mView.findViewById(R.id.text_post_title);
+            mPostDescText = (TextView) mView.findViewById(R.id.text_post_description);
+            mPostMediaImage = (ImageView) mView.findViewById(R.id.image_post_media);
+            mUserFullNameText = (TextView) mView.findViewById(R.id.text_user_name);
+            mUserAvatarImage = (ImageView) mView.findViewById(R.id.image_user_avatar);
 
-        public void setDescription(String description) {
-            TextView textPostDescription = (TextView) view.findViewById(R.id.text_post_description);
-            textPostDescription.setText(description);
-        }
-
-        public void setImage(final Context context, final String image) {
-            final ImageView imagePostMedia = (ImageView) view.findViewById(R.id.image_post_media);
-            Picasso.with(context).load(image).networkPolicy(NetworkPolicy.OFFLINE).into(imagePostMedia, new Callback() {
+            mPostTitleText.setOnClickListener(new View.OnClickListener() {
                 @Override
-                public void onSuccess() {
-
-                }
-
-                @Override
-                public void onError() {
-                    Picasso.with(context).load(image).into(imagePostMedia);
+                public void onClick(View view) {
+                    Log.v("CLICK", "CLICKOU");
                 }
             });
         }
 
-        public void setUser(final Context context, final Post.User user) {
-            TextView textUserName = (TextView) view.findViewById(R.id.text_user_name);
-            textUserName.setText(user.getName());
+        public void setTitle(String title) {
+            mPostTitleText.setText(title);
+        }
 
+        public void setDescription(String description) {
+            mPostDescText.setText(description);
+        }
+
+        public void setImage(final Context context, final String image) {
+            Picasso.with(context).load(image).into(mPostMediaImage);
+        }
+
+        public void setUser(final Context context, final Post.User user) {
+            mUserFullNameText.setText(user.getName());
 
             Transformation transformation = new RoundedTransformationBuilder()
                     .borderColor(Color.BLACK)
@@ -227,9 +235,8 @@ public class MainActivity extends AppCompatActivity
                     .oval(false)
                     .build();
 
-            final ImageView imageUserAvatar = (ImageView) view.findViewById(R.id.image_user_avatar);
             Picasso.with(context).load(user.getImage()).fit()
-                    .transform(transformation).into(imageUserAvatar);
+                    .transform(transformation).into(mUserAvatarImage);
         }
     }
 
