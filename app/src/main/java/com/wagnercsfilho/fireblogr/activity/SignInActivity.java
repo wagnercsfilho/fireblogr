@@ -7,6 +7,7 @@ import android.support.annotation.NonNull;
 import android.support.design.widget.Snackbar;
 import android.support.v7.app.AppCompatActivity;
 import android.text.TextUtils;
+import android.util.Log;
 import android.view.View;
 import android.widget.EditText;
 import android.widget.Toast;
@@ -23,6 +24,7 @@ import com.google.firebase.database.ValueEventListener;
 import com.wagnercsfilho.fireblogr.R;
 
 import butterknife.BindView;
+import butterknife.ButterKnife;
 import butterknife.OnClick;
 
 public class SignInActivity extends AppCompatActivity {
@@ -38,6 +40,7 @@ public class SignInActivity extends AppCompatActivity {
     DatabaseReference databaseReference;
 
     ProgressDialog progressDialog;
+    private FirebaseAuth.AuthStateListener authStateListener;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -50,10 +53,23 @@ public class SignInActivity extends AppCompatActivity {
         databaseReference.keepSynced(true);
 
         progressDialog = new ProgressDialog(this);
+
+        ButterKnife.bind(this);
+
+        authStateListener = new FirebaseAuth.AuthStateListener() {
+            @Override
+            public void onAuthStateChanged(@NonNull FirebaseAuth firebaseAuth) {
+                if (firebaseAuth.getCurrentUser() != null) {
+                    Intent intent = new Intent(SignInActivity.this, MainActivity.class);
+                    intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP);
+                    startActivity(intent);
+                }
+            }
+        };
     }
 
     @OnClick(R.id.button_signin)
-    public void signIn(final View view) {
+    public void signIn() {
         String email = editEmail.getText().toString().trim();
         String password = editPassword.getText().toString().trim();
 
@@ -71,13 +87,14 @@ public class SignInActivity extends AppCompatActivity {
                     if (task.isSuccessful()) {
                         checkUserExist();
                     } else {
-                        Snackbar.make(view, "Sign In Failed! Try again.", Snackbar.LENGTH_SHORT).show();
+                        Log.d("LOGIN", task.getException().getMessage());
+                        Toast.makeText(SignInActivity.this, "Sign In Failed! Try again.", Toast.LENGTH_SHORT).show();
                     }
 
                 }
             });
         } else {
-            Snackbar.make(view, "Fill all fields.", Snackbar.LENGTH_SHORT).show();
+            Toast.makeText(SignInActivity.this, "Fill all fields.", Toast.LENGTH_SHORT).show();
         }
     }
 

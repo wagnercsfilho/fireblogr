@@ -23,6 +23,8 @@ import com.firebase.ui.database.FirebaseRecyclerAdapter;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
+import com.squareup.picasso.Callback;
+import com.squareup.picasso.NetworkPolicy;
 import com.squareup.picasso.Picasso;
 import com.wagnercsfilho.fireblogr.R;
 import com.wagnercsfilho.fireblogr.model.Post;
@@ -49,8 +51,6 @@ public class MainActivity extends AppCompatActivity
             @Override
             public void onClick(View view) {
                 startActivity(new Intent(MainActivity.this, NewPostActivity.class));
-                /*Snackbar.make(view, "Replaces with your own action", Snackbar.LENGTH_LONG)
-                        .setAction("Action", null).show();*/
             }
         });
 
@@ -63,23 +63,25 @@ public class MainActivity extends AppCompatActivity
         NavigationView navigationView = (NavigationView) findViewById(R.id.nav_view);
         navigationView.setNavigationItemSelectedListener(this);
 
-        databaseReference = FirebaseDatabase.getInstance().getReference().child("blog");
-
-        listPost = (RecyclerView) findViewById(R.id.list_post);
-        listPost.setHasFixedSize(true);
-        listPost.setLayoutManager(new LinearLayoutManager(this));
-
         firebaseAuth = FirebaseAuth.getInstance();
         authStateListener = new FirebaseAuth.AuthStateListener() {
             @Override
             public void onAuthStateChanged(@NonNull FirebaseAuth firebaseAuth) {
                 if (firebaseAuth.getCurrentUser() == null) {
-                    Intent intent = new Intent(MainActivity.this, SignUpActivity.class);
+                    Intent intent = new Intent(MainActivity.this, SignInActivity.class);
                     intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP);
                     startActivity(intent);
                 }
             }
         };
+
+        databaseReference = FirebaseDatabase.getInstance().getReference().child("posts");
+
+        listPost = (RecyclerView) findViewById(R.id.list_post);
+        listPost.setHasFixedSize(true);
+        listPost.setLayoutManager(new LinearLayoutManager(this));
+
+
     }
 
     @Override
@@ -105,6 +107,7 @@ public class MainActivity extends AppCompatActivity
 
         switch (id) {
             case R.id.action_settings:
+                startActivity(new Intent(MainActivity.this, SettingsActivity.class));
                 return true;
             case R.id.action_logout:
                 logout();
@@ -159,6 +162,8 @@ public class MainActivity extends AppCompatActivity
                 viewHolder.setTitle(model.getTitle());
                 viewHolder.setDescription(model.getDescription());
                 viewHolder.setImage(getApplicationContext(), model.getImage());
+
+                viewHolder.setUser(getApplicationContext(), model.getUser());
             }
         };
 
@@ -192,9 +197,27 @@ public class MainActivity extends AppCompatActivity
             textPostDescription.setText(description);
         }
 
-        public void setImage(Context context, String image) {
-            ImageView imagePostMedia = (ImageView) view.findViewById(R.id.image_post_media);
-            Picasso.with(context).load(image).into(imagePostMedia);
+        public void setImage(final Context context, final String image) {
+            final ImageView imagePostMedia = (ImageView) view.findViewById(R.id.image_post_media);
+            Picasso.with(context).load(image).networkPolicy(NetworkPolicy.OFFLINE).into(imagePostMedia, new Callback() {
+                @Override
+                public void onSuccess() {
+
+                }
+
+                @Override
+                public void onError() {
+                    Picasso.with(context).load(image).into(imagePostMedia);
+                }
+            });
+        }
+
+        public void setUser(final Context context, final Post.User user) {
+            TextView textUserName = (TextView) view.findViewById(R.id.text_user_name);
+            textUserName.setText(user.getName());
+
+            final ImageView imageUserAvatar = (ImageView) view.findViewById(R.id.image_user_avatar);
+            Picasso.with(context).load(user.getImage()).into(imageUserAvatar);
         }
     }
 

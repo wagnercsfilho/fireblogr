@@ -4,6 +4,7 @@ import android.app.ProgressDialog;
 import android.content.Intent;
 import android.net.Uri;
 import android.os.Bundle;
+import android.support.annotation.NonNull;
 import android.support.design.widget.Snackbar;
 import android.support.v7.app.AppCompatActivity;
 import android.text.TextUtils;
@@ -13,13 +14,20 @@ import android.view.View;
 import android.widget.EditText;
 import android.widget.ImageButton;
 
+import com.google.android.gms.tasks.OnCompleteListener;
 import com.google.android.gms.tasks.OnSuccessListener;
+import com.google.android.gms.tasks.Task;
+import com.google.firebase.auth.FirebaseAuth;
+import com.google.firebase.database.DataSnapshot;
+import com.google.firebase.database.DatabaseError;
 import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
+import com.google.firebase.database.ValueEventListener;
 import com.google.firebase.storage.FirebaseStorage;
 import com.google.firebase.storage.StorageReference;
 import com.google.firebase.storage.UploadTask;
 import com.wagnercsfilho.fireblogr.R;
+import com.wagnercsfilho.fireblogr.model.Post;
 
 import java.util.Random;
 
@@ -38,7 +46,8 @@ public class NewPostActivity extends AppCompatActivity {
     Uri imageUri;
 
     StorageReference storageReference;
-    DatabaseReference databaseReference;
+    DatabaseReference postReference;
+    DatabaseReference userReference;
 
     ProgressDialog progressDialog;
 
@@ -48,7 +57,8 @@ public class NewPostActivity extends AppCompatActivity {
         setContentView(R.layout.activity_new_post);
 
         storageReference = FirebaseStorage.getInstance().getReference();
-    databaseReference = FirebaseDatabase.getInstance().getReference().child("blog");
+        postReference = FirebaseDatabase.getInstance().getReference().child("posts");
+        userReference = FirebaseDatabase.getInstance().getReference().child("users");
 
         progressDialog = new ProgressDialog(this);
 
@@ -80,7 +90,7 @@ public class NewPostActivity extends AppCompatActivity {
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
         getMenuInflater().inflate(R.menu.new_post_menu, menu);
-        return super.onCreateOptionsMenu(menu);
+        return true;
     }
 
     @Override
@@ -105,18 +115,48 @@ public class NewPostActivity extends AppCompatActivity {
             StorageReference filePath = storageReference.child("blog_images").child(imageUri.getLastPathSegment());
             filePath.putFile(imageUri).addOnSuccessListener(new OnSuccessListener<UploadTask.TaskSnapshot>() {
                 @Override
-                public void onSuccess(UploadTask.TaskSnapshot taskSnapshot) {
-                    Uri downloadUri = taskSnapshot.getDownloadUrl();
+                public void onSuccess(final UploadTask.TaskSnapshot taskSnapshot) {
 
-                    DatabaseReference newPost = databaseReference.push();
+                    String userId = FirebaseAuth.getInstance().getCurrentUser().getUid();
 
-                    newPost.child("title").setValue(title);
-                    newPost.child("description").setValue(description);
-                    newPost.child("image").setValue(downloadUri.toString());
+                    userReference.child(userId).addListenerForSingleValueEvent(new ValueEventListener() {
+                        @Override
+                        public void onDataChange(DataSnapshot dataSnapshot) {
+                            if (dataSnapshot.exists()) {
 
-                    progressDialog.dismiss();
+                                Uri downloadUri = taskSnapshot.getDownloadUrl();
+                                DatabaseReference newPost = postReference.push();
 
-                    startActivity(new Intent(NewPostActivity.this, MainActivity.class));
+                                String userName = FirebaseAuth.getInstance().getCurrentUser().getDisplayName();
+
+                                Post post = new Post();
+                                post.setTitle(title);
+                                post.setDescription(description);
+                                post.setImage(downloadUri.toString());
+                                post.getUser().setName(dataSnapshot.child("name").getValue().toString());
+                                post.getUser().setImage(dataSnapshot.child("image").getValue().toString());
+
+                                newPost.setValue(post).addOnCompleteListener(new OnCompleteListener<Void>() {
+                                    @Override
+                                    public void onComplete(@NonNull Task<Void> task) {
+
+                                        if (task.isSuccessful()) {
+                                            startActivity(new Intent(NewPostActivity.this, MainActivity.class));
+                                        }
+
+                                        progressDialog.dismiss();
+                                    }
+                                });
+                            }
+                        }
+
+                        @Override
+                        public void onCancelled(DatabaseError databaseError) {
+
+                        }
+                    });
+
+
                 }
             });
         } else {

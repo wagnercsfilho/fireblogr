@@ -30,6 +30,7 @@ public class SignUpActivity extends AppCompatActivity {
     DatabaseReference databaseReference;
 
     ProgressDialog progressDialog;
+    private FirebaseAuth.AuthStateListener authStateListener;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -52,6 +53,17 @@ public class SignUpActivity extends AppCompatActivity {
                 signUp(view);
             }
         });
+
+        authStateListener = new FirebaseAuth.AuthStateListener() {
+            @Override
+            public void onAuthStateChanged(@NonNull FirebaseAuth firebaseAuth) {
+                if (firebaseAuth.getCurrentUser() != null) {
+                    Intent intent = new Intent(SignUpActivity.this, MainActivity.class);
+                    intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP);
+                    startActivity(intent);
+                }
+            }
+        };
 
     }
 

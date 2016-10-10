@@ -4,20 +4,30 @@ import android.app.ProgressDialog;
 import android.content.Intent;
 import android.net.Uri;
 import android.os.Bundle;
+import android.support.annotation.NonNull;
 import android.support.v7.app.AppCompatActivity;
 import android.text.TextUtils;
 import android.view.View;
 import android.widget.EditText;
 import android.widget.ImageButton;
+import android.widget.Toast;
 
+import com.google.android.gms.tasks.OnCompleteListener;
+import com.google.android.gms.tasks.OnSuccessListener;
+import com.google.android.gms.tasks.Task;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
+import com.google.firebase.storage.FirebaseStorage;
+import com.google.firebase.storage.StorageReference;
+import com.google.firebase.storage.UploadTask;
 import com.theartofdev.edmodo.cropper.CropImage;
 import com.theartofdev.edmodo.cropper.CropImageView;
 import com.wagnercsfilho.fireblogr.R;
+import com.wagnercsfilho.fireblogr.model.User;
 
 import butterknife.BindView;
+import butterknife.ButterKnife;
 import butterknife.OnClick;
 
 public class SettingsActivity extends AppCompatActivity {
@@ -36,6 +46,8 @@ public class SettingsActivity extends AppCompatActivity {
 
     DatabaseReference databaseReference;
 
+    StorageReference storageReference;
+
     ProgressDialog progressDialog;
 
     @Override
@@ -47,6 +59,10 @@ public class SettingsActivity extends AppCompatActivity {
 
         firebaseAuth = FirebaseAuth.getInstance();
         databaseReference = FirebaseDatabase.getInstance().getReference().child("users");
+
+        storageReference = FirebaseStorage.getInstance().getReference().child("profile_images");
+
+        ButterKnife.bind(this);
     }
 
     @OnClick(R.id.image_user_avatar)
@@ -58,18 +74,44 @@ public class SettingsActivity extends AppCompatActivity {
 
     @OnClick(R.id.button_save)
     public void saveUserInfo(View v) {
-        String name = editName.getText().toString().trim();
+        final String name = editName.getText().toString().trim();
 
         if (!TextUtils.isEmpty(name) && imageUserAvatarURI != null) {
 
-            progressDialog.setMessage("");
+            progressDialog.setMessage("Loading...");
+            progressDialog.show();
 
-            String userId = firebaseAuth.getCurrentUser().getUid();
+            storageReference.putFile(imageUserAvatarURI).addOnSuccessListener(new OnSuccessListener<UploadTask.TaskSnapshot>() {
+                @Override
+                public void onSuccess(final UploadTask.TaskSnapshot task) {
+                        String userId = firebaseAuth.getCurrentUser().getUid();
 
-            databaseReference.child(userId).child("name").setValue(name);
-            databaseReference.child(userId).child("image").setValue("default");
+                        User user = new User();
+                        user.setName(name);
+                        user.setImage(task.getDownloadUrl().toString());
+
+                        databaseReference.child(userId).setValue(user).addOnCompleteListener(new OnCompleteListener<Void>() {
+                            @Override
+                            public void onComplete(@NonNull Task<Void> task) {
+                                progressDialog.dismiss();
+
+                                if (task.isSuccessful()) {
+
+                                    Intent intent = new Intent(SettingsActivity.this, MainActivity.class);
+                                    intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP);
+                                    startActivity(intent);
+
+                                } else {
+                                    Toast.makeText(SettingsActivity.this, "Failed!", Toast.LENGTH_LONG).show();
+                                }
+                            }
+                        });
+                }
+            });
+
+
         } else {
-
+            Toast.makeText(SettingsActivity.this, "Fill all fields", Toast.LENGTH_LONG).show();
         }
     }
 
