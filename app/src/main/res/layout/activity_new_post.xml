@@ -17,7 +17,7 @@
 
     <ImageButton
         android:layout_width="match_parent"
-        android:layout_height="160dp"
+        android:layout_height="wrap_content"
         app:srcCompat="@mipmap/add_btn"
         android:layout_alignParentTop="true"
         android:id="@+id/image_media"

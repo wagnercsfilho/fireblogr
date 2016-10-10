@@ -2,6 +2,7 @@ package com.wagnercsfilho.fireblogr.activity;
 
 import android.content.Context;
 import android.content.Intent;
+import android.graphics.Color;
 import android.os.Bundle;
 import android.support.annotation.NonNull;
 import android.support.design.widget.FloatingActionButton;
@@ -23,9 +24,11 @@ import com.firebase.ui.database.FirebaseRecyclerAdapter;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
+import com.makeramen.roundedimageview.RoundedTransformationBuilder;
 import com.squareup.picasso.Callback;
 import com.squareup.picasso.NetworkPolicy;
 import com.squareup.picasso.Picasso;
+import com.squareup.picasso.Transformation;
 import com.wagnercsfilho.fireblogr.R;
 import com.wagnercsfilho.fireblogr.model.Post;
 
@@ -216,8 +219,17 @@ public class MainActivity extends AppCompatActivity
             TextView textUserName = (TextView) view.findViewById(R.id.text_user_name);
             textUserName.setText(user.getName());
 
+
+            Transformation transformation = new RoundedTransformationBuilder()
+                    .borderColor(Color.BLACK)
+                    .borderWidthDp(0)
+                    .cornerRadiusDp(30)
+                    .oval(false)
+                    .build();
+
             final ImageView imageUserAvatar = (ImageView) view.findViewById(R.id.image_user_avatar);
-            Picasso.with(context).load(user.getImage()).into(imageUserAvatar);
+            Picasso.with(context).load(user.getImage()).fit()
+                    .transform(transformation).into(imageUserAvatar);
         }
     }
 
