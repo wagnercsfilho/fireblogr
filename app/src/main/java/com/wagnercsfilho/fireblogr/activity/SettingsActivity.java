@@ -11,6 +11,7 @@ import android.os.Bundle;
 import android.provider.MediaStore;
 import android.support.annotation.NonNull;
 import android.support.annotation.RequiresApi;
+import android.support.v4.app.ActivityCompat;
 import android.support.v7.app.AlertDialog;
 import android.support.v7.app.AppCompatActivity;
 import android.text.TextUtils;
@@ -89,7 +90,7 @@ public class SettingsActivity extends AppCompatActivity {
                     mNameEdit.setText(user.getName());
                     if (!TextUtils.isEmpty(user.getImage())) {
                         Uri uriUserAvatar = Uri.parse(user.getImage());
-                        Picasso.with(SettingsActivity.this).load(uriUserAvatar).into(mUserAvatarImage);
+                        Picasso.with(SettingsActivity.this).load(uriUserAvatar).fit().centerCrop().into(mUserAvatarImage);
                     }
                 }
             }
@@ -129,8 +130,8 @@ public class SettingsActivity extends AppCompatActivity {
             @Override
             public void onClick(DialogInterface dialog, int which) {
                 if (cameraTypes[which].equals(OPTION_CAMERA)) {
-                    if (checkSelfPermission(Manifest.permission.CAMERA) != PackageManager.PERMISSION_GRANTED) {
-                        requestPermissions(new String[]{Manifest.permission.CAMERA}, CAMERA_REQUEST);
+                    if (ActivityCompat.checkSelfPermission(SettingsActivity.this, Manifest.permission.CAMERA) != PackageManager.PERMISSION_GRANTED) {
+                        ActivityCompat.requestPermissions(SettingsActivity.this, new String[]{Manifest.permission.CAMERA}, CAMERA_REQUEST);
                     } else {
                         callCameraIntent();
                     }
@@ -180,7 +181,6 @@ public class SettingsActivity extends AppCompatActivity {
                             mProgressDialog.dismiss();
 
                             if (task.isSuccessful()) {
-
                                 Intent intent = new Intent(SettingsActivity.this, MainActivity.class);
                                 intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP);
                                 startActivity(intent);
@@ -202,12 +202,10 @@ public class SettingsActivity extends AppCompatActivity {
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
 
-        if (resultCode == RESULT_OK) {
-            Uri imageUri = null;
+        if (resultCode == RESULT_OK && (requestCode == GALLERY_REQUEST || requestCode == CAMERA_REQUEST)) {
 
-            if (requestCode == GALLERY_REQUEST) {
-                imageUri = data.getData();
-            }
+            Uri imageUri = null;
+            imageUri = data.getData();
 
             CropImage.activity(imageUri)
                     .setGuidelines(CropImageView.Guidelines.ON)

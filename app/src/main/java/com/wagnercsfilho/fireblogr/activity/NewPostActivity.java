@@ -28,6 +28,7 @@ import com.google.firebase.storage.StorageReference;
 import com.google.firebase.storage.UploadTask;
 import com.wagnercsfilho.fireblogr.R;
 import com.wagnercsfilho.fireblogr.model.Post;
+import com.wagnercsfilho.fireblogr.model.User;
 
 import java.util.Random;
 
@@ -49,12 +50,16 @@ public class NewPostActivity extends AppCompatActivity {
     DatabaseReference postReference;
     DatabaseReference userReference;
 
+    FirebaseAuth mAuth;
+
     ProgressDialog progressDialog;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_new_post);
+
+        mAuth = FirebaseAuth.getInstance();
 
         storageReference = FirebaseStorage.getInstance().getReference();
         postReference = FirebaseDatabase.getInstance().getReference().child("posts");
@@ -127,14 +132,16 @@ public class NewPostActivity extends AppCompatActivity {
                                 Uri downloadUri = taskSnapshot.getDownloadUrl();
                                 DatabaseReference newPost = postReference.push();
 
-                                String userName = FirebaseAuth.getInstance().getCurrentUser().getDisplayName();
+                                User user = dataSnapshot.getValue(User.class);
 
                                 Post post = new Post();
                                 post.setTitle(title);
                                 post.setDescription(description);
                                 post.setImage(downloadUri.toString());
-                                post.getUser().setName(dataSnapshot.child("name").getValue().toString());
-                                post.getUser().setImage(dataSnapshot.child("image").getValue().toString());
+
+                                post.getUser().setId(mAuth.getCurrentUser().getUid().toString());
+                                post.getUser().setName(user.getName());
+                                post.getUser().setImage(user.getImage());
 
                                 newPost.setValue(post).addOnCompleteListener(new OnCompleteListener<Void>() {
                                     @Override

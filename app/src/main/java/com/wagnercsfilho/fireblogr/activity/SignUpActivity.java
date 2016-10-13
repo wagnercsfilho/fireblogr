@@ -10,6 +10,7 @@ import android.text.TextUtils;
 import android.view.View;
 import android.widget.Button;
 import android.widget.EditText;
+import android.widget.Toast;
 
 import com.google.android.gms.tasks.OnCompleteListener;
 import com.google.android.gms.tasks.Task;
@@ -18,6 +19,7 @@ import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
 import com.wagnercsfilho.fireblogr.R;
+import com.wagnercsfilho.fireblogr.model.User;
 
 public class SignUpActivity extends AppCompatActivity {
 
@@ -27,7 +29,7 @@ public class SignUpActivity extends AppCompatActivity {
     Button buttonSignUp;
 
     FirebaseAuth firebaseAuth;
-    DatabaseReference databaseReference;
+    DatabaseReference mDatabaseRefUser;
 
     ProgressDialog progressDialog;
     private FirebaseAuth.AuthStateListener authStateListener;
@@ -40,7 +42,7 @@ public class SignUpActivity extends AppCompatActivity {
         progressDialog = new ProgressDialog(this);
 
         firebaseAuth = FirebaseAuth.getInstance();
-        databaseReference = FirebaseDatabase.getInstance().getReference().child("users");
+        mDatabaseRefUser = FirebaseDatabase.getInstance().getReference().child("users");
 
         editEmail = (EditText) findViewById(R.id.edit_email);
         editName = (EditText) findViewById(R.id.edit_name);
@@ -83,17 +85,32 @@ public class SignUpActivity extends AppCompatActivity {
                     if (task.isSuccessful()) {
                         String userId = firebaseAuth.getCurrentUser().getUid();
 
-                        DatabaseReference currentUser = databaseReference.child(userId);
-                        currentUser.child("name").setValue(name);
-                        currentUser.child("image").setValue("default");
+                        User user = new User();
+                        user.setName(name);
+                        user.setImage("default");
 
-                        progressDialog.dismiss();
+                        mDatabaseRefUser.child(userId).setValue(user).addOnCompleteListener(new OnCompleteListener<Void>() {
+                            @Override
+                            public void onComplete(@NonNull Task<Void> task) {
 
-                        Intent intent = new Intent(SignUpActivity.this, MainActivity.class);
-                        intent.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP);
-                        startActivity(intent);
+                                progressDialog.dismiss();
+
+                                if (task.isSuccessful()) {
+                                    Toast.makeText(SignUpActivity.this, "You need to setup your account.", Toast.LENGTH_LONG).show();
+                                    Intent intent = new Intent(SignUpActivity.this, SettingsActivity.class);
+                                    intent.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP);
+                                    startActivity(intent);
+                                } else {
+                                    Snackbar.make(view, "Sign Up Failed! Try again.", Snackbar.LENGTH_SHORT)
+                                            .setAction("Action", null)
+                                            .show();
+                                }
+                            }
+                        });
 
                     } else {
+                        progressDialog.dismiss();
+
                         Snackbar.make(view, "Sign Up Failed! Try again.", Snackbar.LENGTH_SHORT)
                                 .setAction("Action", null)
                                 .show();
