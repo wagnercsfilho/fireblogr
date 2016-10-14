@@ -9,7 +9,7 @@
     <ImageView
         android:id="@+id/singleImageSelect"
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
+        android:layout_height="320dp"
         android:adjustViewBounds="true"
         android:background="#00ffffff"
         android:scaleType="centerCrop"

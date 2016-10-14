@@ -44,6 +44,8 @@ public class PostDetailActivity extends AppCompatActivity {
 
         mAuth = FirebaseAuth.getInstance();
 
+
+
         mPostListener = new ValueEventListener() {
             @Override
             public void onDataChange(DataSnapshot dataSnapshot) {
@@ -62,6 +64,8 @@ public class PostDetailActivity extends AppCompatActivity {
                 if (mAuth.getCurrentUser().getUid().equals(postUid)) {
                     singleRemoveButton.setVisibility(View.VISIBLE);
                 }
+
+                setTitle(postTitle);
             }
 
             @Override

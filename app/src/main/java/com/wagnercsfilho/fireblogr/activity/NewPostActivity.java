@@ -8,11 +8,13 @@ import android.support.annotation.NonNull;
 import android.support.design.widget.Snackbar;
 import android.support.v7.app.AppCompatActivity;
 import android.text.TextUtils;
+import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
 import android.widget.EditText;
 import android.widget.ImageButton;
+import android.widget.Toast;
 
 import com.google.android.gms.tasks.OnCompleteListener;
 import com.google.android.gms.tasks.OnSuccessListener;
@@ -26,6 +28,9 @@ import com.google.firebase.database.ValueEventListener;
 import com.google.firebase.storage.FirebaseStorage;
 import com.google.firebase.storage.StorageReference;
 import com.google.firebase.storage.UploadTask;
+import com.squareup.picasso.Picasso;
+import com.theartofdev.edmodo.cropper.CropImage;
+import com.theartofdev.edmodo.cropper.CropImageView;
 import com.wagnercsfilho.fireblogr.R;
 import com.wagnercsfilho.fireblogr.model.Post;
 import com.wagnercsfilho.fireblogr.model.User;
@@ -44,8 +49,6 @@ public class NewPostActivity extends AppCompatActivity {
 
     EditText editDescription;
 
-    Uri imageUri;
-
     StorageReference storageReference;
     DatabaseReference postReference;
     DatabaseReference userReference;
@@ -53,6 +56,7 @@ public class NewPostActivity extends AppCompatActivity {
     FirebaseAuth mAuth;
 
     ProgressDialog progressDialog;
+    private Uri imageMediaURI;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -87,8 +91,26 @@ public class NewPostActivity extends AppCompatActivity {
         super.onActivityResult(requestCode, resultCode, data);
 
         if (requestCode == GALLERY_REQUEST && resultCode == RESULT_OK) {
-            imageUri = data.getData();
-            imageMedia.setImageURI(imageUri);
+            Uri imageUri = data.getData();
+
+            CropImage.activity(imageUri)
+                    .setGuidelines(CropImageView.Guidelines.ON)
+                    .setAspectRatio(1, 1)
+                    .start(this);
+
+
+        } else if (requestCode == CropImage.CROP_IMAGE_ACTIVITY_REQUEST_CODE) {
+            CropImage.ActivityResult result = CropImage.getActivityResult(data);
+            if (resultCode == RESULT_OK) {
+
+                imageMediaURI = result.getUri();
+
+                Picasso.with(NewPostActivity.this).load(imageMediaURI).fit().centerCrop().into(imageMedia);
+
+            } else if (resultCode == CropImage.CROP_IMAGE_ACTIVITY_RESULT_ERROR_CODE) {
+                Exception error = result.getError();
+                Log.e("IMAGE", "Error: " + error);
+            }
         }
     }
 
@@ -117,8 +139,8 @@ public class NewPostActivity extends AppCompatActivity {
             progressDialog.setMessage("Posting....");
             progressDialog.show();
 
-            StorageReference filePath = storageReference.child("blog_images").child(imageUri.getLastPathSegment());
-            filePath.putFile(imageUri).addOnSuccessListener(new OnSuccessListener<UploadTask.TaskSnapshot>() {
+            StorageReference filePath = storageReference.child("blog_images").child(imageMediaURI.getLastPathSegment());
+            filePath.putFile(imageMediaURI).addOnSuccessListener(new OnSuccessListener<UploadTask.TaskSnapshot>() {
                 @Override
                 public void onSuccess(final UploadTask.TaskSnapshot taskSnapshot) {
 

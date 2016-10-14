@@ -204,8 +204,7 @@ public class SettingsActivity extends AppCompatActivity {
 
         if (resultCode == RESULT_OK && (requestCode == GALLERY_REQUEST || requestCode == CAMERA_REQUEST)) {
 
-            Uri imageUri = null;
-            imageUri = data.getData();
+            Uri imageUri = data.getData();
 
             CropImage.activity(imageUri)
                     .setGuidelines(CropImageView.Guidelines.ON)

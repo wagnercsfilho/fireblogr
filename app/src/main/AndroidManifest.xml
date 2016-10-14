@@ -37,7 +37,8 @@
             android:name="com.theartofdev.edmodo.cropper.CropImageActivity"
             android:theme="@style/Base.Theme.AppCompat" /> <!-- optional (needed if default theme has no action bar) -->
         <activity android:name=".activity.SettingsActivity" />
-        <activity android:name=".activity.PostDetailActivity"></activity>
+        <activity android:name=".activity.PostDetailActivity"
+            android:parentActivityName=".activity.MainActivity"></activity>
     </application>
 
 </manifest>
